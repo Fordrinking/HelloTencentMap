@@ -1,0 +1,56 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    compileSdkVersion 24
+    buildToolsVersion "24.0.2"
+
+    signingConfigs {
+        debug {
+            keyAlias 'runjack-r-key'
+            keyPassword 'yang123456'
+            storeFile file('C:/_Proj/android/runjack-release-key.keystore')
+            storePassword 'yang123456'
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.hill1942.hellotencentmap"
+        minSdkVersion 15
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    sourceSets.main {
+        jni.srcDirs = []
+        jniLibs.srcDir 'src/main/libs'
+    }
+
+
+    task nativeLibsToJar(type: Zip, description: "create a jar archive of the native libs") {
+        destinationDir file("$projectDir/libs")
+        baseName "libplasma"
+        extension "jar"
+        from fileTree(dir: "libs", include: "**/*.so")
+        into "lib"
+    }
+
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn(nativeLibsToJar)
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile files('libs/TencentLocationSDK_v5.0.1_r251203_170116_1729.jar')
+    compile files('libs/libplasma.jar')
+}
