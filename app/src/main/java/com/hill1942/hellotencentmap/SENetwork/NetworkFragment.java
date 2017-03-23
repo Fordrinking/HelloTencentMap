@@ -80,7 +80,7 @@ public class NetworkFragment extends Fragment {
         while (numChars < maxLength && readSize != -1) {
             numChars += readSize;
             int pct = (100 * numChars) / maxLength;
-            publishProgress(DownloadCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS, pct);
+            //publishProgress(DownloadCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS, pct);
             readSize = reader.read(buffer, numChars, buffer.length - numChars);
         }
         if (numChars != -1) {
@@ -96,7 +96,7 @@ public class NetworkFragment extends Fragment {
     /**
      * Start non-blocking execution of DownloadTask.
      */
-    public void startDownload() {
+    public void startURLPost() {
         cancelDownload();
         mDownloadTask = new DownloadTask();
         mDownloadTask.execute(mUrlString);
@@ -111,7 +111,7 @@ public class NetworkFragment extends Fragment {
         }
     }
 
-    private String downloadUrl(URL url) throws IOException {
+    private String postUrl(URL url) throws IOException {
         InputStream stream = null;
         HttpURLConnection connection = null;
         String result = null;
@@ -128,14 +128,14 @@ public class NetworkFragment extends Fragment {
             connection.setDoInput(true);
             // Open communications link (network traffic occurs here).
             connection.connect();
-            publishProgress(DownloadCallback.Progress.CONNECT_SUCCESS);
+            //publishProgress(DownloadCallback.Progress.CONNECT_SUCCESS);
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("HTTP error code: " + responseCode);
             }
             // Retrieve the response body as an InputStream.
             stream = connection.getInputStream();
-            publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
+            //publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
             if (stream != null) {
                 // Converts Stream to String with max length of 500.
                 result = readStream(stream, 500);
@@ -155,11 +155,11 @@ public class NetworkFragment extends Fragment {
     /**
      * Implementation of AsyncTask designed to fetch data from the network.
      */
-    private class DownloadTask extends AsyncTask<String, Void, Result> {
+    private class URLPostTask extends AsyncTask<String, Void, Result> {
 
         private DownloadCallback<String> mCallback;
 
-        public DownloadTask(DownloadCallback<String> callback) {
+        public URLPostTask(DownloadCallback<String> callback) {
             setCallback(callback);
         }
 
@@ -195,7 +195,7 @@ public class NetworkFragment extends Fragment {
                 String urlString = urls[0];
                 try {
                     URL url = new URL(urlString);
-                    String resultString = downloadUrl(url);
+                    String resultString = postUrl(url);
                     if (resultString != null) {
                         result = new Result(resultString);
                     } else {
