@@ -3,16 +3,7 @@ apply plugin: 'com.android.application'
 android {
 
     compileSdkVersion 24
-    buildToolsVersion "24.0.2"
-
-    signingConfigs {
-        debug {
-            keyAlias 'runjack-r-key'
-            keyPassword 'yang123456'
-            storeFile file('C:/_Proj/android/runjack-release-key.keystore')
-            storePassword 'yang123456'
-        }
-    }
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         applicationId "com.hill1942.hellotencentmap"
