@@ -1,19 +1,24 @@
 package com.hill1942.hellotencentmap.SENetwork;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by ykdac on 3/23/2017.
@@ -23,8 +28,8 @@ public class NetworkFragment extends Fragment {
 
     private static final String URL_KEY = "UrlKey";
 
-    private DownloadCallback mCallback;
-    private DownloadTask mDownloadTask;
+    private URLTransCallback mCallback;
+    private URLTransTask mURLTransTask;
     private String mUrlString;
 
     /**
@@ -51,7 +56,7 @@ public class NetworkFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         // Host Activity will handle callbacks from task.
-        mCallback = (DownloadCallback) context;
+        mCallback = (URLTransCallback) context;
     }
 
     @Override
@@ -64,7 +69,7 @@ public class NetworkFragment extends Fragment {
     @Override
     public void onDestroy() {
         // Cancel task when Fragment is destroyed.
-        cancelDownload();
+        cancelURLTrans();
         super.onDestroy();
     }
 
@@ -80,7 +85,7 @@ public class NetworkFragment extends Fragment {
         while (numChars < maxLength && readSize != -1) {
             numChars += readSize;
             int pct = (100 * numChars) / maxLength;
-            //publishProgress(DownloadCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS, pct);
+            //publishProgress(URLTransCallback.Progress.PROCESS_INPUT_STREAM_IN_PROGRESS, pct);
             readSize = reader.read(buffer, numChars, buffer.length - numChars);
         }
         if (numChars != -1) {
@@ -96,46 +101,74 @@ public class NetworkFragment extends Fragment {
     /**
      * Start non-blocking execution of DownloadTask.
      */
-    public void startURLPost() {
-        cancelDownload();
-        mDownloadTask = new DownloadTask();
-        mDownloadTask.execute(mUrlString);
+    public void startURLTrans(Map<String, String> params) {
+        cancelURLTrans();
+
+        StringBuilder sb = new StringBuilder("");
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            sb.append(entry.getKey().toString() + "=" + entry.getValue().toString() + "&");
+        }
+
+        mURLTransTask = new URLTransTask(new URLTransCallback<String>() {
+            @Override
+            public void updateFromTrans(String result) {
+
+            }
+
+            @Override
+            public NetworkInfo getActiveNetworkInfo() {
+                return null;
+            }
+
+            @Override
+            public void onProgressUpdate(int progressCode, int percentComplete) {
+
+            }
+
+            @Override
+            public void finishTrans() {
+
+            }
+        });
+        mURLTransTask.execute(mUrlString);
     }
 
     /**
      * Cancel (and interrupt if necessary) any ongoing DownloadTask execution.
      */
-    public void cancelDownload() {
-        if (mDownloadTask != null) {
-            mDownloadTask.cancel(true);
+    public void cancelURLTrans() {
+        if (mURLTransTask != null) {
+            mURLTransTask.cancel(true);
         }
     }
 
-    private String postUrl(URL url) throws IOException {
+    private String doURLTrans(URL url) throws IOException {
         InputStream stream = null;
         HttpURLConnection connection = null;
         String result = null;
+        String urlParameters  = "param1=a&param2=b&param3=c";
         try {
             connection = (HttpURLConnection) url.openConnection();
-            // Timeout for reading InputStream arbitrarily set to 3000ms.
-            connection.setReadTimeout(3000);
-            // Timeout for connection.connect() arbitrarily set to 3000ms.
-            connection.setConnectTimeout(3000);
-            // For this use case, set HTTP method to GET.
-            connection.setRequestMethod("GET");
-            // Already true by default but setting just in case; needs to be true since this request
-            // is carrying an input (response) body.
-            connection.setDoInput(true);
-            // Open communications link (network traffic occurs here).
-            connection.connect();
-            //publishProgress(DownloadCallback.Progress.CONNECT_SUCCESS);
+            connection.setDoOutput( true );
+            connection.setInstanceFollowRedirects( false );
+            connection.setRequestMethod( "POST" );
+            connection.setRequestProperty( "Content-Type", "application/x-www-form-urlencoded");
+            connection.setRequestProperty( "charset", "utf-8");
+            connection.setUseCaches( false );
+            DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+            wr.writeBytes(urlParameters);
+            wr.flush();
+            wr.close();
+
+            //connection.connect();
+            //publishProgress(URLTransCallback.Progress.CONNECT_SUCCESS);
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("HTTP error code: " + responseCode);
             }
             // Retrieve the response body as an InputStream.
             stream = connection.getInputStream();
-            //publishProgress(DownloadCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
+            //publishProgress(URLTransCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
             if (stream != null) {
                 // Converts Stream to String with max length of 500.
                 result = readStream(stream, 500);
@@ -155,15 +188,15 @@ public class NetworkFragment extends Fragment {
     /**
      * Implementation of AsyncTask designed to fetch data from the network.
      */
-    private class URLPostTask extends AsyncTask<String, Void, Result> {
+    private class URLTransTask extends AsyncTask<String, Void, Result> {
 
-        private DownloadCallback<String> mCallback;
+        private URLTransCallback<String> mCallback;
 
-        public URLPostTask(DownloadCallback<String> callback) {
+        public URLTransTask(URLTransCallback<String> callback) {
             setCallback(callback);
         }
 
-        void setCallback(DownloadCallback<String> callback) {
+        void setCallback(URLTransCallback<String> callback) {
             mCallback = callback;
         }
 
@@ -179,7 +212,7 @@ public class NetworkFragment extends Fragment {
                         (networkInfo.getType() != ConnectivityManager.TYPE_WIFI
                                 && networkInfo.getType() != ConnectivityManager.TYPE_MOBILE)) {
                     // If no connectivity, cancel task and update Callback with null data.
-                    mCallback.updateFromDownload(null);
+                    mCallback.updateFromTrans(null);
                     cancel(true);
                 }
             }
@@ -195,7 +228,7 @@ public class NetworkFragment extends Fragment {
                 String urlString = urls[0];
                 try {
                     URL url = new URL(urlString);
-                    String resultString = postUrl(url);
+                    String resultString = doURLTrans(url);
                     if (resultString != null) {
                         result = new Result(resultString);
                     } else {
@@ -209,17 +242,17 @@ public class NetworkFragment extends Fragment {
         }
 
         /**
-         * Updates the DownloadCallback with the result.
+         * Updates the URLTransCallback with the result.
          */
         @Override
         protected void onPostExecute(Result result) {
             if (result != null && mCallback != null) {
                 if (result.mException != null) {
-                    mCallback.updateFromDownload(result.mException.getMessage());
+                    mCallback.updateFromTrans(result.mException.getMessage());
                 } else if (result.mResultValue != null) {
-                    mCallback.updateFromDownload(result.mResultValue);
+                    mCallback.updateFromTrans(result.mResultValue);
                 }
-                mCallback.finishDownloading();
+                mCallback.finishTrans();
             }
         }
 

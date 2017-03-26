@@ -1,14 +1,7 @@
 package com.hill1942.hellotencentmap;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.ProgressDialog;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.os.Debug;
-import android.os.UserManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -19,21 +12,20 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.hill1942.hellotencentmap.SENetwork.NetworkFragment;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
 import com.tencent.map.geolocation.TencentLocationRequest;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements TencentLocationListener {
 
     private TextView tv;
     private Button btn;
+    private NetworkFragment mNetworkFragment;
     private TencentLocationManager locationManager;
 
     private static final int ACCESS_COARSE_LOCATION_REQUEST_CODE = 1;
@@ -90,6 +82,15 @@ public class MainActivity extends AppCompatActivity implements TencentLocationLi
 
             Log.i("tencent location: ", str);
 
+            mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(),
+                    "http://api.hill1942.com");
+            if (mNetworkFragment != null) {
+                // Execute the async download.
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("longitude", String.valueOf(longitude));
+                params.put("latitude", String.valueOf(latitude));
+                mNetworkFragment.startURLTrans(params);
+            }
         } else {
             // 定位失败
             Log.i("tencent location", "failed");
