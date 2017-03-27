@@ -13,6 +13,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.hill1942.hellotencentmap.SENetwork.NetworkFragment;
+import com.hill1942.hellotencentmap.SENetwork.Result;
+import com.hill1942.hellotencentmap.SENetwork.URLTransCallback;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
@@ -21,7 +23,8 @@ import com.tencent.map.geolocation.TencentLocationRequest;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements TencentLocationListener {
+public class MainActivity extends AppCompatActivity implements
+        TencentLocationListener {
 
     private TextView tv;
     private Button btn;

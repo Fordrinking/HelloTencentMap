@@ -41,7 +41,7 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:appcompat-v7:25.3.0'
     compile files('libs/TencentLocationSDK_v5.0.1_r251203_170116_1729.jar')
     compile files('libs/libplasma.jar')
 }

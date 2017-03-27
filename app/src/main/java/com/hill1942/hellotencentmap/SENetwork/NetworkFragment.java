@@ -56,7 +56,7 @@ public class NetworkFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         // Host Activity will handle callbacks from task.
-        mCallback = (URLTransCallback) context;
+        //mCallback = (URLTransCallback) context;
     }
 
     @Override
