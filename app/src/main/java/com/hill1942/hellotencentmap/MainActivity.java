@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements
             Log.i("tencent location: ", str);
 
             mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(),
-                    "http://api.hill1942.com");
+                    "http://lbs.hill1942.com/api/upload");
             if (mNetworkFragment != null) {
                 // Execute the async download.
                 Map<String, String> params = new HashMap<String, String>();
