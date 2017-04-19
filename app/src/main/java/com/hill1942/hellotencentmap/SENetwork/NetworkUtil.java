@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -15,16 +16,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
  * Created by ykdac on 3/23/2017.
  */
-public class NetworkFragment extends Fragment {
-    public static final String TAG = "NetworkFragment";
+public class NetworkUtil {
+    public static NetworkUtil instance;
+    public static final String TAG = "NetworkUtil";
 
     private static final String URL_KEY = "UrlKey";
 
@@ -33,23 +32,30 @@ public class NetworkFragment extends Fragment {
     private String mUrlString;
 
     /**
-     * Static initializer for NetworkFragment that sets the URL of the host it will be downloading
+     * Static initializer for NetworkUtil that sets the URL of the host it will be downloading
      * from.
      */
-    public static NetworkFragment getInstance(FragmentManager fragmentManager, String url) {
-        NetworkFragment networkFragment = new NetworkFragment();
+    public static NetworkUtil getInstance() {
+        if (instance == null) {
+            instance = new NetworkUtil();
+        }
+        return instance;
+/*        NetworkUtil networkUtil = new NetworkUtil();
         Bundle args = new Bundle();
         args.putString(URL_KEY, url);
-        networkFragment.setArguments(args);
-        fragmentManager.beginTransaction().add(networkFragment, TAG).commit();
-        return networkFragment;
+        networkUtil.setArguments(args);
+        fragmentManager.beginTransaction().add(networkUtil, TAG).commit();
+        return networkUtil;*/
     }
 
-    @Override
+   /* @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Log.i("Network Fragment: ", "onCreate: ");
         mUrlString = getArguments().getString(URL_KEY);
 
+        Log.i("Network on Create: ", mUrlString);
     }
 
     @Override
@@ -71,7 +77,7 @@ public class NetworkFragment extends Fragment {
         // Cancel task when Fragment is destroyed.
         cancelURLTrans();
         super.onDestroy();
-    }
+    }*/
 
     private String readStream(InputStream stream, int maxLength) throws IOException {
         String result = null;
@@ -101,7 +107,7 @@ public class NetworkFragment extends Fragment {
     /**
      * Start non-blocking execution of DownloadTask.
      */
-    public void startURLTrans(Map<String, String> params) {
+    public void startURLTrans(String url, Map<String, String> params) {
         cancelURLTrans();
 
         StringBuilder sb = new StringBuilder("");
@@ -130,7 +136,8 @@ public class NetworkFragment extends Fragment {
 
             }
         });
-        mURLTransTask.execute(mUrlString);
+        Log.i("Network Fragment: ", "url is: " + url );
+        mURLTransTask.execute(url, sb.toString());
     }
 
     /**
@@ -142,32 +149,38 @@ public class NetworkFragment extends Fragment {
         }
     }
 
-    private String doURLTrans(URL url) throws IOException {
+    private String doURLTrans(URL url, String urlParameters) throws IOException {
         InputStream stream = null;
         HttpURLConnection connection = null;
         String result = null;
-        String urlParameters  = "param1=a&param2=b&param3=c";
+        //String urlParameters  = "param1=a&param2=b&param3=c";
         try {
             connection = (HttpURLConnection) url.openConnection();
-            connection.setDoOutput( true );
+            //connection.setDoOutput( true );
             connection.setInstanceFollowRedirects( false );
-            connection.setRequestMethod( "POST" );
+            connection.setRequestMethod( "GET" );
             connection.setRequestProperty( "Content-Type", "application/x-www-form-urlencoded");
             connection.setRequestProperty( "charset", "utf-8");
             connection.setUseCaches( false );
-            DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-            wr.writeBytes(urlParameters);
-            wr.flush();
-            wr.close();
+            //DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+            //wr.writeBytes(urlParameters);
+            //wr.flush();
+            //wr.close();
 
             //connection.connect();
             //publishProgress(URLTransCallback.Progress.CONNECT_SUCCESS);
             int responseCode = connection.getResponseCode();
+
+            Log.i("doURLTrans rescode: ", String.valueOf(responseCode));
+
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("HTTP error code: " + responseCode);
             }
             // Retrieve the response body as an InputStream.
             stream = connection.getInputStream();
+
+            Log.i("doURLTrans stream: ", stream.toString());
+
             //publishProgress(URLTransCallback.Progress.GET_INPUT_STREAM_SUCCESS, 0);
             if (stream != null) {
                 // Converts Stream to String with max length of 500.
@@ -182,6 +195,9 @@ public class NetworkFragment extends Fragment {
                 connection.disconnect();
             }
         }
+
+        Log.i("doURLTrans result: ", result);
+
         return result;
     }
 
@@ -206,7 +222,8 @@ public class NetworkFragment extends Fragment {
          */
         @Override
         protected void onPreExecute() {
-            if (mCallback != null) {
+            Log.i("URLTransTask: ", "onPreExecute");
+            /*if (mCallback != null) {
                 NetworkInfo networkInfo = mCallback.getActiveNetworkInfo();
                 if (networkInfo == null || !networkInfo.isConnected() ||
                         (networkInfo.getType() != ConnectivityManager.TYPE_WIFI
@@ -215,7 +232,7 @@ public class NetworkFragment extends Fragment {
                     mCallback.updateFromTrans(null);
                     cancel(true);
                 }
-            }
+            }*/
         }
 
         /**
@@ -223,12 +240,16 @@ public class NetworkFragment extends Fragment {
          */
         @Override
         protected Result doInBackground(String... urls) {
+            Log.i("URLTransTask: ", "doInBackground");
             Result result = null;
             if (!isCancelled() && urls != null && urls.length > 0) {
                 String urlString = urls[0];
+                String params = urls[1];
+                Log.i("URLTransTask: ", "url is: " + urlString );
+                Log.i("URLTransTask: ", "params is: " + params );
                 try {
-                    URL url = new URL(urlString);
-                    String resultString = doURLTrans(url);
+                    URL url = new URL(urlString + "?" + params);
+                    String resultString = doURLTrans(url, params);
                     if (resultString != null) {
                         result = new Result(resultString);
                     } else {
@@ -246,14 +267,15 @@ public class NetworkFragment extends Fragment {
          */
         @Override
         protected void onPostExecute(Result result) {
-            if (result != null && mCallback != null) {
+            /*if (result != null && mCallback != null) {
                 if (result.mException != null) {
                     mCallback.updateFromTrans(result.mException.getMessage());
                 } else if (result.mResultValue != null) {
                     mCallback.updateFromTrans(result.mResultValue);
                 }
                 mCallback.finishTrans();
-            }
+            }*/
+            Log.i("URLTransTask: ", "onPostExecute, result: " + result.toString());
         }
 
         /**
@@ -261,6 +283,7 @@ public class NetworkFragment extends Fragment {
          */
         @Override
         protected void onCancelled(Result result) {
+            //Log.i("URLTransTask: ", "doInBackground");
         }
 
     }

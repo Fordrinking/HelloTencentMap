@@ -12,9 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.hill1942.hellotencentmap.SENetwork.NetworkFragment;
-import com.hill1942.hellotencentmap.SENetwork.Result;
-import com.hill1942.hellotencentmap.SENetwork.URLTransCallback;
+import com.hill1942.hellotencentmap.SENetwork.NetworkUtil;
 import com.tencent.map.geolocation.TencentLocation;
 import com.tencent.map.geolocation.TencentLocationListener;
 import com.tencent.map.geolocation.TencentLocationManager;
@@ -28,7 +26,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private TextView tv;
     private Button btn;
-    private NetworkFragment mNetworkFragment;
+    private NetworkUtil mNetworkUtil;
     private TencentLocationManager locationManager;
 
     private static final int ACCESS_COARSE_LOCATION_REQUEST_CODE = 1;
@@ -76,6 +74,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onLocationChanged(TencentLocation tencentLocation, int error, String s) {
         if (TencentLocation.ERROR_OK == error) {
+
+            locationManager.removeUpdates(MainActivity.this);
             // 定位成功
             double longitude = tencentLocation.getLongitude();
             double latitude  = tencentLocation.getLatitude();
@@ -85,14 +85,14 @@ public class MainActivity extends AppCompatActivity implements
 
             Log.i("tencent location: ", str);
 
-            mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(),
-                    "http://lbs.hill1942.com/api/upload");
-            if (mNetworkFragment != null) {
+            mNetworkUtil = NetworkUtil.getInstance();
+            if (mNetworkUtil != null) {
                 // Execute the async download.
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("longitude", String.valueOf(longitude));
                 params.put("latitude", String.valueOf(latitude));
-                mNetworkFragment.startURLTrans(params);
+                Log.i("SENetwork:  ", "start url trans");
+                mNetworkUtil.startURLTrans("http://lbs.hill1942.com/api/upload", params);
             }
         } else {
             // 定位失败
